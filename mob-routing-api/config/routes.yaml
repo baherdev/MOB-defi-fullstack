@@ -1,0 +1,21 @@
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+# config/routes.yaml
+
+# Routes de l'API v1
+api_v1:
+    resource: '../src/Controller/Api/'
+    type: attribute
+
+# Route racine (optionnelle, pour tester)
+app_home:
+    path: /
+    controller: Symfony\Bundle\FrameworkBundle\Controller\TemplateController
+    defaults:
+        template: 'home.html.twig'
+api_login:
+    path: /api/login
+    methods: ['POST']

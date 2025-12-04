@@ -1,0 +1,10 @@
+api_platform:
+  title: 'MOB Train Routing API'
+  version: '1.0.0'
+  description: 'API pour router un train d''une station A à B sur un réseau'
+  formats:
+    json: ['application/json']
+  docs_formats:
+    json: ['application/json']
+  defaults:
+    pagination_enabled: false
