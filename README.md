@@ -300,6 +300,8 @@ Push → Tests → Lint → Build → Security → E2E → Deploy (main only)
 
 ## 🌐 Déploiement Production
 
+⚠️ **Important** : La configuration de production fournie (Traefik + Let's Encrypt) est un **exemple de référence** et **n'a pas été testée en environnement réel**. Elle nécessite des tests approfondis, une adaptation à votre infrastructure et un audit de sécurité avant toute utilisation en production.
+
 ### Avec HTTPS automatique (Traefik + Let's Encrypt)
 
 ```bash
@@ -309,11 +311,13 @@ nano .env.prod
 
 # 2. Modifier docker-compose.prod.yml avec votre domaine
 
-# 3. Lancer en production
+# 3. Lancer en production (après tests et validation)
 docker compose -f docker-compose.prod.yml up -d
 ```
 
 👉 Voir [docs/PRODUCTION.md](docs/PRODUCTION.md) pour le guide complet
+
+⚠️ **Consultez également [docs/SECURITY.md](docs/SECURITY.md) pour les recommandations de sécurité essentielles avant tout déploiement en production.**
 
 ---
 
@@ -348,7 +352,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 - Email: [baher.rais@iec.ch](mailto:baher.rais@iec.ch)
 - GitHub: [@baherdev](https://github.com/baherdev)
-- LinkedIn: [Baher Rais](https://www.linkedin.com/in/baher-rais)
+- YouTube: [@Freelancemodule](https://www.youtube.com/@Freelancemodule/playlists)
 
 ---
 
@@ -357,6 +361,55 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 - **MOB (Montreux-Oberland-Bernois)** pour les données du réseau ferroviaire
 - **Anthropic Claude** pour l'assistance au développement
 - La communauté **Symfony** et **Vue.js**
+
+---
+
+## 🤖 Développement Assisté par IA
+
+Ce projet a été développé avec l'assistance de **Claude.ai (Anthropic)** dans le cadre d'un défi technique fullstack.
+
+### Répartition des Compétences
+
+**Développeur (Baher Rais) :**
+- ✅ **Expertise Backend Symfony** : Architecture, entités, services
+- ✅ **Connaissances Frontend React** : Concepts de composants et state management
+- ✅ **Conception algorithmique** : Compréhension et adaptation de l'algorithme de Dijkstra
+- ✅ **Architecture système** : Décisions de conception des entités et du modèle de données
+- ✅ **Validation et tests** : Vérification du fonctionnement, débogage, propositions de solutions
+- ✅ **Direction du projet** : Définition des besoins, priorisation, décisions techniques
+
+**Assistance IA (Claude.ai) :**
+- 🤖 **Vue.js / TypeScript** : Génération du code frontend (nouveau framework pour le développeur)
+- 🤖 **CI/CD GitHub Actions** : Configuration du pipeline (en collaboration)
+- 🤖 **Docker / DevOps** : Optimisation des Dockerfiles et docker-compose
+- 🤖 **Documentation** : Rédaction des fichiers Markdown
+- 🤖 **Débogage** : Assistance dans la résolution de problèmes techniques
+- 🤖 **Best practices** : Suggestions d'amélioration du code
+
+### Méthodologie de Collaboration
+
+Le développement s'est déroulé comme un **binômage humain-IA** :
+
+1. **Conception** : Discussion des besoins et de l'architecture
+2. **Implémentation** : Génération de code avec révision humaine
+3. **Itération** : Tests, corrections, améliorations
+4. **Validation** : Vérification manuelle du fonctionnement
+5. **Documentation** : Rédaction collaborative
+
+**Points clés :**
+- 💡 L'IA a accéléré l'apprentissage de Vue.js
+- 🔍 Le développeur a validé chaque décision technique
+- 🐛 Le débogage a été un effort collaboratif
+- 📚 La documentation a été enrichie par les deux parties
+
+### Transparence
+
+Ce projet démontre qu'un développeur expérimenté dans certaines technologies (Symfony, React) peut, avec l'assistance d'une IA :
+- Apprendre rapidement de nouveaux frameworks (Vue.js)
+- Mettre en place des pratiques DevOps modernes (CI/CD)
+- Produire une application complète et de qualité professionnelle
+
+L'IA est un **outil d'assistance**, pas un remplacement. La compréhension technique, les décisions d'architecture et la validation restent du ressort du développeur.
 
 ---
 
