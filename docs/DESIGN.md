@@ -260,17 +260,17 @@ Calculer le coût du trajet en fonction des zones tarifaires traversées.
 ### **Décisions Techniques**
 
 1. **Bidirectionnalité** : Créer 2 segments (A→B et B→A) plutôt qu'un flag `bidirectional`
-    - ✅ Simplifie l'algorithme de Dijkstra
-    - ✅ Permet des distances asymétriques futures (montée vs descente)
+   - ✅ Simplifie l'algorithme de Dijkstra
+   - ✅ Permet des distances asymétriques futures (montée vs descente)
 
 2. **UUID vs Auto-increment** : Utiliser des UUID pour les IDs
-    - ✅ Permet la distribution et la synchronisation
-    - ✅ Évite les collisions dans un système distribué
+   - ✅ Permet la distribution et la synchronisation
+   - ✅ Évite les collisions dans un système distribué
 
 3. **Stockage du chemin** : Array JSON dans Trajet
-    - ✅ Rapide à lire
-    - ✅ Facile à afficher
-    - ⚠️ Non normalisé (acceptable pour les besoins actuels)
+   - ✅ Rapide à lire
+   - ✅ Facile à afficher
+   - ⚠️ Non normalisé (acceptable pour les besoins actuels)
 
 ---
 
