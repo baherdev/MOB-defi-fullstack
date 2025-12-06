@@ -1,320 +1,363 @@
-# 🔒 Configuration de Sécurité
+# Sécurité
 
-## ⚠️ Configuration actuelle (Développement)
-
-L'application actuelle est configurée pour un **environnement de développement** :
-- HTTP (pas de HTTPS)
-- Pas d'authentification
-- API publique
-
-**⚠️ Cette configuration N'EST PAS adaptée pour la production.**
+Ce document décrit les mesures de sécurité mises en place et les recommandations pour un déploiement en production.
 
 ---
 
-## 🔐 Recommandations pour la Production
+## ⚠️ Avertissement Important
 
-### 1. HTTPS/TLS
+**La configuration de production fournie dans ce projet (Traefik + HTTPS) est un EXEMPLE et n'a PAS été testée en environnement réel.**
 
-#### Option A : Avec Traefik + Let's Encrypt
+- ✅ La configuration de **développement** a été testée et fonctionne
+- ⚠️ La configuration de **production** est fournie comme **référence** mais nécessite :
+    - Tests approfondis avant mise en production
+    - Adaptation à votre infrastructure spécifique
+    - Audit de sécurité par un professionnel
+    - Configuration des secrets et credentials appropriés
 
+**Nous ne garantissons pas la sécurité de la configuration production fournie. Utilisez-la à vos risques et périls.**
+
+---
+
+## 🔐 Configuration Actuelle (Développement)
+
+L'application implémente les mesures de sécurité suivantes en environnement de développement :
+
+### ✅ Authentification JWT
+
+**Implémentation complète avec LexikJWTAuthenticationBundle**
+
+- **Clés RSA** : Génération automatique de paires de clés publique/privée
+- **Algorithme** : RS256 (RSA avec SHA-256)
+- **Protection des endpoints** : Tous les endpoints `/api/v1/*` requièrent un token JWT valide
+- **Login** : `POST /api/login` avec email/password
+- **Token dans header** : `Authorization: Bearer {token}`
+- **Durée de validité** : 3600 secondes (1 heure) - configurable
+- **Refresh** : À implémenter si nécessaire (JWTRefreshTokenBundle)
+
+**Configuration :**
 ```yaml
-# docker-compose.prod.yml
-services:
-  traefik:
-    image: traefik:v2.10
-    command:
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.email=votre@email.com"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./letsencrypt:/letsencrypt
-
-  frontend:
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`votre-domaine.com`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+# config/packages/lexik_jwt_authentication.yaml
+lexik_jwt_authentication:
+    secret_key: '%env(resolve:JWT_SECRET_KEY)%'
+    public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
+    pass_phrase: '%env(JWT_PASSPHRASE)%'
+    token_ttl: 3600
 ```
 
-#### Option B : Avec Nginx + Certbot
+**Endpoints protégés :**
+- ✅ `POST /api/v1/routes` - Calcul d'itinéraire
+- ✅ `GET /api/v1/stats/distances` - Statistiques
+- ❌ `POST /api/login` - Public (nécessaire pour obtenir le token)
 
-```bash
-# Installation
-apt-get install certbot python3-certbot-nginx
+### ✅ Validation des Entrées
 
-# Obtention du certificat
-certbot --nginx -d votre-domaine.com -d api.votre-domaine.com
+**Backend (Symfony Validator)**
+- Validation des codes de station (format et existence)
+- Validation des codes analytiques
+- Validation des types de données (DTO avec contraintes)
+- Protection contre les injections SQL (Doctrine ORM)
 
-# Auto-renouvellement
-certbot renew --dry-run
-```
+**Frontend (Vue.js)**
+- Validation des formulaires côté client
+- Vérification de la présence du token avant requêtes API
+- Gestion des erreurs 401 (redirection vers login)
 
----
+### ✅ CORS (Cross-Origin Resource Sharing)
 
-### 2. Authentification API
-
-#### JWT avec LexikJWTAuthenticationBundle
-
-```bash
-# Installation
-composer require lexik/jwt-authentication-bundle
-```
-
-```yaml
-# config/packages/security.yaml
-security:
-  firewalls:
-    api:
-      pattern: ^/api
-      stateless: true
-      jwt: ~
-
-  access_control:
-    - { path: ^/api/login, roles: PUBLIC_ACCESS }
-    - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
-```
-
-#### Ou API Key simple
-
-```yaml
-# config/packages/security.yaml
-security:
-  firewalls:
-    api:
-      pattern: ^/api
-      stateless: true
-      custom_authenticators:
-        - App\Security\ApiKeyAuthenticator
-```
-
----
-
-### 3. Rate Limiting
-
-#### Avec Symfony Rate Limiter
-
-```bash
-composer require symfony/rate-limiter
-```
-
-```php
-// src/EventListener/RateLimitListener.php
-use Symfony\Component\RateLimiter\RateLimiterFactory;
-
-class RateLimitListener
-{
-    public function __construct(
-        private RateLimiterFactory $apiLimiter
-    ) {}
-
-    public function onKernelRequest(RequestEvent $event): void
-    {
-        $limiter = $this->apiLimiter->create($request->getClientIp());
-        
-        if (!$limiter->consume(1)->isAccepted()) {
-            throw new TooManyRequestsHttpException();
-        }
-    }
-}
-```
-
-#### Ou avec Nginx
-
-```nginx
-# nginx.conf
-limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
-
-location /api {
-    limit_req zone=api_limit burst=20 nodelay;
-    proxy_pass http://backend;
-}
-```
-
----
-
-### 4. Headers de Sécurité (déjà partiellement configuré)
-
-```nginx
-# nginx.conf (à améliorer)
-add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';" always;
-add_header X-Frame-Options "DENY" always;
-add_header X-Content-Type-Options "nosniff" always;
-add_header X-XSS-Protection "1; mode=block" always;
-add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
-```
-
----
-
-### 5. Secrets et Variables d'environnement
-
-#### Développement
-
-```yaml
-# docker-compose.yml
-environment:
-  APP_SECRET: ${APP_SECRET}
-  DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-```
-
-```bash
-# .env (à ne pas commiter)
-APP_SECRET=your-secret-key-here
-DATABASE_PASSWORD=strong-password-here
-```
-
-#### Production avec Docker Swarm
-
-```yaml
-# docker-compose.prod.yml
-services:
-  backend:
-    environment:
-      APP_SECRET_FILE: /run/secrets/app_secret
-      DATABASE_PASSWORD_FILE: /run/secrets/db_password
-    secrets:
-      - app_secret
-      - db_password
-
-secrets:
-  app_secret:
-    external: true
-  db_password:
-    external: true
-```
-
-```bash
-# Créer les secrets
-echo "your-secret" | docker secret create app_secret -
-echo "db-password" | docker secret create db_password -
-```
-
----
-
-### 6. CORS Configuration
-
+**Configuration pour développement :**
 ```yaml
 # config/packages/nelmio_cors.yaml
 nelmio_cors:
-  defaults:
-    origin_regex: true
-    allow_origin: ['https://votre-domaine.com']  # Pas '*'
-    allow_methods: ['GET', 'POST', 'OPTIONS']
-    allow_headers: ['Content-Type', 'Authorization']
-    expose_headers: ['Link']
-    max_age: 3600
-  paths:
-    '^/api/':
-      allow_origin: ['https://votre-domaine.com']
+    defaults:
+        origin_regex: true
+        allow_origin: ['http://localhost:3000']
+        allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+        allow_headers: ['*']
+        expose_headers: ['Link']
+        max_age: 3600
 ```
 
----
+⚠️ **En production** : Restreindre `allow_origin` à votre domaine spécifique.
 
-### 7. Protection contre les injections SQL
+### ✅ Protection CSRF
 
-✅ **Déjà fait** : Doctrine ORM avec requêtes préparées
+- **Pas nécessaire** pour une API stateless avec JWT
+- Les tokens JWT remplacent la protection CSRF traditionnelle
 
+### ✅ Hashage des Mots de Passe
+
+**Symfony PasswordHasher**
 ```php
-// ✅ BON (protégé)
-$repository->findBy(['shortName' => $stationId]);
-
-// ❌ MAUVAIS (vulnérable)
-$em->createQuery("SELECT s FROM Station s WHERE s.shortName = '$stationId'");
+// Utilise bcrypt ou argon2i automatiquement
+$hashedPassword = $passwordHasher->hashPassword($user, $plainPassword);
 ```
+
+**Configuration :**
+- Algorithme : `auto` (bcrypt par défaut)
+- Cost : 13 en production, 4 en test (pour la rapidité)
+
+### ⚠️ Limitations de l'Environnement de Développement
+
+**Ces configurations NE SONT PAS adaptées pour la production :**
+
+- ❌ **HTTP uniquement** (pas de HTTPS)
+- ❌ **CORS permissif** (autorise localhost)
+- ❌ **Debug mode activé** (`APP_DEBUG=1`)
+- ❌ **Logs verbeux** (stack traces visibles)
+- ❌ **Secrets en clair** dans `.env` (non chiffré)
+- ❌ **Base de données locale** sans backup
+- ❌ **Pas de rate limiting** sur les endpoints
+- ❌ **Pas de monitoring** de sécurité
 
 ---
 
-### 8. Validation des données
+## 🔒 Recommandations pour la Production
 
-✅ **Déjà fait** : API Platform avec validation Symfony
+### 1. HTTPS Obligatoire ⚠️
 
-```php
-use Symfony\Component\Validator\Constraints as Assert;
-
-class RouteRequest
-{
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 10)]
-    public string $fromStationId;
-}
-```
-
----
-
-### 9. Audit de sécurité
-
-```bash
-# Scanner les dépendances PHP
-composer audit
-
-# Scanner les dépendances npm
-npm audit
-
-# Scanner les images Docker (déjà dans CI/CD)
-trivy image defi-fullstack-backend
-```
-
----
-
-### 10. Logs de sécurité
+**Critique : Sans HTTPS, les tokens JWT sont transmis en clair !**
 
 ```yaml
-# config/packages/monolog.yaml
-monolog:
-  channels: ['security']
-  handlers:
-    security:
-      type: stream
-      path: '%kernel.logs_dir%/security.log'
-      level: warning
-      channels: ['security']
+# docker-compose.prod.yml utilise Traefik + Let's Encrypt
+# ATTENTION : Configuration non testée, à adapter
+traefik:
+  command:
+    - "--certificatesresolvers.letsencrypt.acme.email=votre@email.com"
+    - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
 ```
 
+**Actions requises :**
+- ✅ Configurer un nom de domaine
+- ✅ Pointer les DNS vers votre serveur
+- ✅ Tester le renouvellement automatique des certificats
+- ✅ Forcer HTTPS (redirection HTTP → HTTPS)
+- ✅ Configurer HSTS
+
+### 2. Variables d'Environnement Sécurisées
+
+**NE JAMAIS commiter les secrets !**
+
+```bash
+# .env.prod (à créer sur le serveur, NE PAS commiter)
+APP_SECRET=générez_un_secret_vraiment_aléatoire_32_caractères_minimum
+MYSQL_ROOT_PASSWORD=mot_de_passe_très_complexe_et_aléatoire
+JWT_PASSPHRASE=phrase_de_passe_pour_clés_jwt
+```
+
+**Générer des secrets sécurisés :**
+```bash
+# Secret Symfony
+php -r "echo bin2hex(random_bytes(32));"
+
+# Mot de passe MySQL
+openssl rand -base64 32
+
+# Passphrase JWT
+openssl rand -base64 48
+```
+
+### 3. Rate Limiting
+
+**Protéger contre les attaques par force brute**
+
+```yaml
+# À implémenter : symfony/rate-limiter
+framework:
+    rate_limiter:
+        login:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+```
+
+**Endpoints critiques à protéger :**
+- `/api/login` : Max 5 tentatives / 15 min
+- `/api/v1/routes` : Max 100 requêtes / heure / IP
+- `/api/v1/stats/*` : Max 50 requêtes / heure / IP
+
+### 4. Security Headers
+
+**Configuration Traefik (dans docker-compose.prod.yml) :**
+
+```yaml
+# ATTENTION : Configuration non testée
+traefik.http.middlewares.security-headers.headers:
+  - customResponseHeaders.X-Frame-Options=DENY
+  - customResponseHeaders.X-Content-Type-Options=nosniff
+  - customResponseHeaders.X-XSS-Protection=1; mode=block
+  - customResponseHeaders.Strict-Transport-Security=max-age=31536000; includeSubDomains
+  - customResponseHeaders.Referrer-Policy=no-referrer-when-downgrade
+  - customResponseHeaders.Permissions-Policy=geolocation=(), microphone=(), camera=()
+```
+
+### 5. Base de Données
+
+**Sécuriser MySQL :**
+
+```bash
+# Créer un utilisateur dédié avec privilèges minimaux
+CREATE USER 'mob_app'@'%' IDENTIFIED BY 'mot_de_passe_complexe';
+GRANT SELECT, INSERT, UPDATE, DELETE ON mob_routing.* TO 'mob_app'@'%';
+FLUSH PRIVILEGES;
+
+# Désactiver l'utilisateur root distant
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+FLUSH PRIVILEGES;
+```
+
+**Sauvegardes automatiques :**
+```bash
+# Cron quotidien
+0 2 * * * docker exec mob-mysql mysqldump -u root -p$MYSQL_ROOT_PASSWORD mob_routing > /backup/mob_$(date +\%Y\%m\%d).sql
+```
+
+### 6. Monitoring et Logs
+
+**Implémenter :**
+- ✅ Logs centralisés (ELK, Graylog, ou Loki)
+- ✅ Alertes sur erreurs critiques
+- ✅ Monitoring des tentatives de connexion échouées
+- ✅ Alertes sur usage anormal (spike de requêtes)
+
+**Outils recommandés :**
+- **Sentry** : Monitoring d'erreurs
+- **Prometheus + Grafana** : Métriques
+- **Fail2Ban** : Blocage automatique d'IPs malveillantes
+
+### 7. Mises à Jour de Sécurité
+
+**Automatiser les scans :**
+```yaml
+# .github/workflows/security.yml
+- name: Security Audit
+  run: |
+    composer audit
+    npm audit
+    docker scan mob-backend
+```
+
+**Tenir à jour :**
+- Dépendances PHP (Composer)
+- Dépendances NPM
+- Images Docker de base
+- Symfony / Vue.js
+
+### 8. Firewall
+
+**Configurer UFW (Ubuntu) :**
+```bash
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow 22/tcp    # SSH
+ufw allow 80/tcp    # HTTP
+ufw allow 443/tcp   # HTTPS
+ufw enable
+```
+
+### 9. Clés JWT en Production
+
+**NE PAS utiliser les clés de dev !**
+
+```bash
+# Sur le serveur de production
+docker exec mob-backend php bin/console lexik:jwt:generate-keypair --overwrite
+
+# Vérifier les permissions
+docker exec mob-backend ls -la config/jwt/
+# private.pem : 600 (lecture seule par propriétaire)
+# public.pem : 644 (lecture par tous)
+```
+
+**Rotation des clés :**
+- Régénérer tous les 6 mois
+- Invalider tous les tokens existants
+- Prévenir les utilisateurs
+
 ---
 
-## 📋 Checklist Sécurité Production
+## 🎯 Checklist de Sécurité Production
 
-- [ ] HTTPS activé avec certificats valides
-- [ ] Authentification API (JWT ou API Key)
-- [ ] Rate limiting configuré
-- [ ] CORS restrictif (pas de *)
-- [ ] Headers de sécurité complets
-- [ ] Secrets dans fichiers séparés (pas en clair)
-- [ ] Firewall configuré (ports 80, 443 seulement)
-- [ ] Backups automatiques de la DB
-- [ ] Logs de sécurité activés
-- [ ] Monitoring et alertes configurés
+Avant de déployer en production, vérifiez :
+
+### Configuration
+- [ ] HTTPS activé avec certificat valide (Let's Encrypt ou autre)
+- [ ] Redirection HTTP → HTTPS forcée
+- [ ] HSTS configuré (min 1 an)
+- [ ] Variables d'environnement sécurisées (pas de valeurs par défaut)
+- [ ] Secrets générés aléatoirement (APP_SECRET, passwords, JWT_PASSPHRASE)
+- [ ] `APP_DEBUG=0` en production
+- [ ] `APP_ENV=prod` en production
+
+### Authentification & Autorisation
+- [x] JWT implémenté et testé
+- [ ] Rate limiting sur `/api/login`
+- [ ] Clés JWT générées spécifiquement pour la production
+- [ ] Token TTL approprié (pas trop long)
+- [ ] Refresh token si nécessaire
+- [ ] Validation stricte des permissions
+
+### Base de Données
+- [ ] Utilisateur MySQL avec privilèges minimaux (pas root)
+- [ ] Mot de passe fort et aléatoire
+- [ ] Connexion depuis l'application uniquement (pas d'accès externe)
+- [ ] Sauvegardes automatiques configurées
+- [ ] Sauvegardes testées (restauration)
+
+### Réseau
+- [ ] Firewall configuré (ports 22, 80, 443 uniquement)
+- [ ] CORS restreint au domaine de production
+- [ ] Rate limiting global sur l'API
+- [ ] Protection DDoS (Cloudflare ou équivalent)
+
+### Monitoring
+- [ ] Logs centralisés configurés
+- [ ] Alertes sur erreurs critiques
+- [ ] Monitoring des ressources (CPU, RAM, disque)
+- [ ] Monitoring de disponibilité (uptime)
+- [ ] Alertes sur tentatives d'intrusion
+
+### Maintenance
+- [ ] Process de mise à jour défini
 - [ ] Scan de vulnérabilités automatique
-- [ ] APP_DEBUG=0 en production
-- [ ] Mots de passe forts partout
+- [ ] Plan de réponse aux incidents
+- [ ] Documentation pour l'équipe ops
 
 ---
 
-## 🎓 Pour ce défi technique
+## 🚨 Vulnérabilités Connues et Acceptées (Dev)
 
-**Note importante :** Ce défi est un **proof of concept** démontrant :
-- Architecture fullstack moderne
-- Qualité du code
-- Tests automatisés
-- CI/CD
+En environnement de développement, les "vulnérabilités" suivantes sont acceptées :
 
-**En production réelle**, tous les points de sécurité ci-dessus devraient être implémentés.
+1. **HTTP sans HTTPS** : OK pour dev local
+2. **CORS permissif** : Nécessaire pour localhost:3000
+3. **Debug mode** : Facilite le développement
+4. **Secrets dans .env** : OK si `.env` est dans `.gitignore`
+5. **Pas de rate limiting** : Simplifie les tests
 
-**Pour le défi MOB**, la configuration actuelle démontre :
-- ✅ Connaissance des best practices (headers, secrets)
-- ✅ Architecture sécurisable
-- ✅ Scan de sécurité dans le CI/CD
-- ⚠️ HTTPS/Auth seraient à ajouter pour une vraie production
+**Ces vulnérabilités DOIVENT être corrigées en production.**
 
 ---
 
-**Documentation créée pour montrer la conscience des enjeux de sécurité et les solutions possibles.**
+## 📚 Ressources
+
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [Symfony Security Best Practices](https://symfony.com/doc/current/security.html)
+- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
+- [Docker Security](https://docs.docker.com/engine/security/)
+- [Let's Encrypt Documentation](https://letsencrypt.org/docs/)
+
+---
+
+## 🆘 En Cas d'Incident de Sécurité
+
+1. **Isoler** : Couper l'accès au système compromis
+2. **Analyser** : Vérifier les logs pour comprendre l'attaque
+3. **Corriger** : Appliquer le correctif de sécurité
+4. **Régénérer** : Changer tous les secrets (JWT, passwords, API keys)
+5. **Notifier** : Informer les utilisateurs si données compromises
+6. **Documenter** : Post-mortem pour éviter la récidive
+
+---
+
+**La sécurité est un processus continu, pas un état final. Restez vigilant !** 🔒
