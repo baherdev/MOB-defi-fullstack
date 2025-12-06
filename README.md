@@ -137,7 +137,7 @@ Cliquez sur **"Statistiques"** dans le menu pour voir :
 docker compose exec backend php bin/phpunit
 
 # Frontend (Vitest)
-docker compose exec frontend npm test
+docker compose run --rm frontend-test npm test
 
 # Ou via le script de test
 ./test-deployment.sh

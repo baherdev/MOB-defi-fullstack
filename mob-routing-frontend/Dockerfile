@@ -1,5 +1,5 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Dependencies stage
+FROM node:20-alpine AS deps
 
 WORKDIR /app
 
@@ -9,6 +9,21 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
+# Test stage (accessible pour les tests)
+FROM deps AS test
+
+WORKDIR /app
+
+# Copy source code
+COPY . .
+
+# Les tests peuvent être lancés ici avec: docker compose run frontend-test npm test
+
+# Build stage
+FROM deps AS builder
+
+WORKDIR /app
+
 # Copy source code
 COPY . .
 
@@ -16,7 +31,7 @@ COPY . .
 RUN npx vite build
 
 # Production stage with Nginx
-FROM nginx:alpine
+FROM nginx:alpine AS production
 
 # Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
