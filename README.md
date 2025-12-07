@@ -333,25 +333,6 @@ docker compose -f docker-compose.prod.yml up -d
 
 ---
 
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! Pour contribuer :
-
-1. Fork le projet
-2. Créer une branche (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-### Guidelines
-
-- ✅ Suivre les conventions de code (PSR-12 pour PHP, Vue.js style guide)
-- ✅ Ajouter des tests pour les nouvelles fonctionnalités
-- ✅ Mettre à jour la documentation
-- ✅ S'assurer que le CI passe
-
----
-
 ## 📝 License
 
 Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
@@ -362,7 +343,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 **Baher Rais**
 
-- Email: [baher.rais@iec.ch](mailto:baher.rais@iec.ch)
+- Email: [baher.rais@iec.ch](mailto:baher.rais@gmail.com)
 - GitHub: [@baherdev](https://github.com/baherdev)
 - YouTube: [@Freelancemodule](https://www.youtube.com/@Freelancemodule/playlists)
 
