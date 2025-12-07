@@ -13,9 +13,9 @@ export default createVuetify({
         themes: {
             light: {
                 colors: {
-                    primary: '#1976D2',
-                    secondary: '#424242',
-                    accent: '#82B1FF',
+                    primary: '#002E5A',      // Bleu officiel MOB
+                    secondary: '#BF252B',     // Rouge officiel MOB (croix suisse)
+                    accent: '#003DA5',        // Bleu accent
                     error: '#FF5252',
                     info: '#2196F3',
                     success: '#4CAF50',
@@ -24,8 +24,8 @@ export default createVuetify({
             },
             dark: {
                 colors: {
-                    primary: '#2196F3',
-                    secondary: '#424242',
+                    primary: '#003DA5',       // Bleu plus clair pour le mode sombre
+                    secondary: '#BF252B',     // Rouge MOB
                 },
             },
         },

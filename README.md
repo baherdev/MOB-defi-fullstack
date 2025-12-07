@@ -159,7 +159,7 @@ docker compose run --rm frontend-test npm run test:coverage
 
 - **Backend** : 12 tests (PHPUnit) - unitaires et d'intégration
 - **Frontend** : 10 tests (~76% de couverture)
-- **Total** : 22 tests automatisés
+- **Tous les tests passent** dans le CI/CD
 
 ---
 

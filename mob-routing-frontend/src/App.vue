@@ -1,7 +1,15 @@
 <template>
   <v-app>
     <v-app-bar color="primary" dark app>
-      <v-toolbar-title>🚂 MOB Routing</v-toolbar-title>
+      <div class="d-flex align-center">
+        <img 
+          src="./assets/logo-mob.svg" 
+          alt="MOB Logo" 
+          height="40"
+          class="mr-3"
+        />
+        <v-toolbar-title>MOB Routing</v-toolbar-title>
+      </div>
 
       <v-spacer />
 
@@ -43,3 +51,9 @@ function navigateTo(path: string) {
   router.push(path);
 }
 </script>
+
+<style scoped>
+.mr-3 {
+  margin-right: 12px;
+}
+</style>
