@@ -130,23 +130,35 @@ Cliquez sur **"Statistiques"** dans le menu pour voir :
 
 ## 🧪 Tests
 
-### Lancer tous les tests
-
+### Backend (PHPUnit)
 ```bash
-# Backend (PHPUnit)
+# Lancer les tests
 docker compose exec backend php bin/phpunit
 
-# Frontend (Vitest)
+# Avec couverture de code
+docker compose exec backend php bin/phpunit --coverage-text
+```
+
+### Frontend (Vitest)
+```bash
+# Lancer les tests
 docker compose run --rm frontend-test npm test
 
+# Avec couverture de code
+docker compose run --rm frontend-test npm run test:coverage
+```
+
+### Script de tests générique de base
+
+```bash
 # Ou via le script de test
 ./test-deployment.sh
 ```
 
 ### Couverture de tests
 
-- **Backend** : 12 tests (Unit + Integration) - 85% de couverture
-- **Frontend** : 10 tests (Components + Services) - 80% de couverture
+- **Backend** : 12 tests (PHPUnit) - unitaires et d'intégration
+- **Frontend** : 10 tests (~76% de couverture)
 - **Total** : 22 tests automatisés
 
 ---
@@ -416,40 +428,16 @@ L'IA est un **outil d'assistance**, pas un remplacement. La compréhension techn
 ## 📊 Statistiques du Projet
 
 - **Lignes de code** : ~8,000+ (Backend + Frontend)
-- **Tests** : 22 tests automatisés
-- **Couverture** : 85% (Backend), 80% (Frontend)
+- **Tests** : 22 tests automatisés (12 backend + 10 frontend)
+- **Couverture** : ~76% (Frontend), Backend non mesuré
 - **Performance** : Calcul d'itinéraire < 10ms
-- **Score Lighthouse** : 95+ (Performance, Accessibility, Best Practices)
+- **CI/CD** : 8 jobs automatisés
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Améliorations Futures
 
-### Version 1.0 (Actuelle) ✅
-- [x] Calcul d'itinéraire avec Dijkstra
-- [x] Authentification JWT
-- [x] Dashboard statistiques
-- [x] CI/CD complet
-- [x] Documentation exhaustive
-
-### Version 1.1 (À venir)
-- [ ] Calcul multi-critères (temps + distance)
-- [ ] Support des horaires réels
-- [ ] Notifications en temps réel
-- [ ] Export PDF des itinéraires
-
-### Version 2.0 (Futur)
-- [ ] Application mobile (React Native)
-- [ ] Intégration de la capacité des trains
-- [ ] Système de réservation
-- [ ] API publique
-
----
-
-<div align="center">
-
-**⭐ Si ce projet vous a été utile, n'hésitez pas à lui donner une étoile ! ⭐**
-
-Made with ❤️ by [Baher Rais](https://github.com/baherdev)
-
-</div>
+### Tests et Qualité
+- [ ] Augmenter la couverture de tests frontend (objectif: 90%)
+- [ ] Ajouter la mesure de couverture backend
+- [ ] Tests end-to-end (Playwright ou Cypress)
