@@ -343,7 +343,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 **Baher Rais**
 
-- Email: [baher.rais@iec.ch](mailto:baher.rais@gmail.com)
+- Email: [baher.rais@gmail.com](mailto:baher.rais@gmail.com)
 - GitHub: [@baherdev](https://github.com/baherdev)
 - YouTube: [@Freelancemodule](https://www.youtube.com/@Freelancemodule/playlists)
 
